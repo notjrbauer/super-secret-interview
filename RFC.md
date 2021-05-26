@@ -28,9 +28,37 @@ jobs. The broker needs a persistent layer, so we will be using an `inmem sync(ma
 ### API
 
 -   GRPC API (start/stop/get status/stream output of a running process)
--   Authentication: Use mTLS and verify client cert. Setup strong cipher suites for TLS and
-    good crpyto certs.
--   Authorization: simple auth scheme.
+
+```go
+
+type Command struct {
+ UUID string
+ Command string
+ Arguments []string
+ User string
+ Group string
+ Directory string
+}
+
+type Message struct {
+  line uint32
+  message string
+}
+
+type JobRequest struct {
+  Name string
+
+  Command
+}
+
+type JobResponse struct {
+  Name string
+  Duration time.Duration
+
+  Command
+  Message
+}
+```
 
 ### Client
 
@@ -62,8 +90,18 @@ LRU to handle large read load frequency. This is outside the scope of the projec
 
 ### Telemetry
 
+## Security
+
+-   Authentication: Use mTLS and verify client cert. Setup strong cipher suites for TLS and
+    good crpyto certs.
+-   Authorization: Use simple authz scheme.
+
 ## Definition of Success
 
 -   High quality tests that cover happy and unhappy scenarios.
 -   Project _should not be one giant pull request_
 -   Program should compile and meet the technical details && criteria.
+
+```
+
+```
