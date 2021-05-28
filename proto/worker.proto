@@ -9,7 +9,7 @@ service WorkerService {
 }
 
 message StartRequest {
-  string jobName = 1;
+  string processName = 1;
   repeated string args = 2;
 }
 
@@ -22,7 +22,6 @@ message StopRequest {
 }
 
 message StopResponse {
-  int64 jobID = 1;
 }
 
 message QueryRequest {
