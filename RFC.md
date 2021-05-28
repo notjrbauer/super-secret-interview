@@ -92,16 +92,41 @@ LRU to handle large read load frequency. This is outside the scope of the projec
 
 ## Security
 
--   Authentication: Use mTLS and verify client cert. Setup strong cipher suites for TLS and
-    good crpyto certs.
--   Authorization: Use simple authz scheme.
+### Authentication
+
+We will be using mTLS for `Authentication`, which requires the generation of the
+following artifacts:
+
+#### Server
+
+1. CA private key && self signed cert
+1. Private key && CSR
+1. Signed cert from CA private key + CSR
+
+#### Client
+
+1. CA private key && self signed cert
+1. Private key && CSR
+1. Signed cert from CA private key + CSR
+
+<Elaborate more on how the authentication process works?>
+
+### Authorization
+
+A simple role schema will be used for authorization:
+
+1. Reader - query/stream(?)
+1. Writer - start/stop/query/stream
+
+These roles will be baked into the certificates.
+
+Using a [grpc interceptor](https://grpc.io/blog/grpc-web-interceptor/) allows us to check the original gRPC request's role context
+before passing it along. We must support two types of actions: Request/Response (start,stop,query), and
+Streaming data (stream). To support Request/Response, we will be using a Unary interceptor.
+To support streaming, we will be using a [stream interceptor](https://grpc.io/blog/grpc-web-interceptor/#stream-interceptor-example) to check authz.
 
 ## Definition of Success
 
 -   High quality tests that cover happy and unhappy scenarios.
 -   Project _should not be one giant pull request_
 -   Program should compile and meet the technical details && criteria.
-
-```
-
-```
