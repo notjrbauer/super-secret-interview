@@ -22,12 +22,18 @@ jobs. The broker needs a persistent layer, so we will be using an `inmem sync(ma
 
 ### Worker Library
 
--   Start / Stop / Query Status of a job.
--   Stream output of a running job.
+#### Methods
+
+-   `Start` - Create a linux process and return the jobID && error.
+-   `Stop` - Halts the job and in turn kills the job's running process.
+-   `Query` - Query for job to check status (Running, Exited).
+    -   **TODO** explore if timestamps will be useful on the data object.
+-   `Stream` - tails the output (stdout/stderr) of the executing process. (Make use of chans).
 
 ### API
 
 -   GRPC API (start/stop/get status/stream output of a running process)
+-   Responsible for providing authnz between client and server.
 
 ```go
 
