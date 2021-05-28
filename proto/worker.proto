@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+service WorkerService {
+  rpc Stream(StreamRequest) returns (stream StreamResponse);
+
+  rpc Start(StartRequest) returns (StartResponse);
+  rpc Stop(StopRequest) returns (StopResponse);
+  rpc Query(QueryRequest) returns (QueryResponse);
+}
+
+message StartRequest {
+  string jobName = 1;
+  repeated string args = 2;
+}
+
+message StartResponse {
+  int64 jobID = 1;
+}
+
+message StopRequest {
+  int64 jobID = 1;
+}
+
+message StopResponse {
+  int64 jobID = 1;
+}
+
+message QueryRequest {
+  int64 jobID = 1;
+}
+
+message QueryResponse {
+  int64 processID = 1;
+  int64 exitCode = 2;
+  bool isComplete = 3;
+}
+
+message StreamRequest {
+  int64 jobID = 1;
+}
+
+message StreamResponse {
+  string chunk = 1;
+}
+
