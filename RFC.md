@@ -151,10 +151,6 @@ To support streaming, we will be using a [stream interceptor](https://grpc.io/bl
 
 ## Trade Offs
 
-### Syncing State - Channels vs Mutex
-
-Channels will allow an easier primative for allowing the broker routine to communicate/keep track of our worker routines.
-
 ### Inmem vs Real Persistence
 
 Restarting the broker service will wipe its queue, and the state of its old and new
