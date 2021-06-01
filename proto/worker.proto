@@ -14,28 +14,37 @@ message StartRequest {
 }
 
 message StartResponse {
-  int64 jobID = 1;
+  string jobID = 1;
 }
 
 message StopRequest {
-  int64 jobID = 1;
+  string jobID = 1;
 }
 
 message StopResponse {
 }
 
 message QueryRequest {
-  int64 jobID = 1;
+  string jobID = 1;
 }
 
 message QueryResponse {
   int64 processID = 1;
   int64 exitCode = 2;
-  bool isComplete = 3;
+
+  enum Status {
+    NONE = 0;
+    FAILED = 1;
+    SUCCESS= 2;
+    RUNNING= 3;
+    STOPPED= 4;
+  }
+
+  Status status = 3;
 }
 
 message StreamRequest {
-  int64 jobID = 1;
+  string jobID = 1;
 }
 
 message StreamResponse {

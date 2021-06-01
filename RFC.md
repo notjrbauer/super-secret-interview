@@ -15,12 +15,21 @@ The assignment requires the implementation of a prototype job worker service
 that provides an API to run arbitrary Linux processes. The assignment will
 tackle Level 3.
 
-## Technical details && Criteria
+## Technical Details && Criteria
 
 The basic idea is to a have a simple client that communicates w/ a broker API, which enables the ability to query worker processes and the progress of their respected
 jobs. The broker needs a persistent layer, so we will be using an `inmem sync(map[worker[jobid]])` to keep a reference of the worker and its progression w/ its job.
 
 `jobID` will be generated with https://github.com/google/uuid
+
+When a job initiates, three artifacts will be generated:
+
+1. `/job/{uuid}` A job directory.
+1. `/job/{uuid}/cmd.sh` file containing the raw command to execute.
+1. `/job/{uuid}/log.txt` file containing the command's `stdout` and `stderr`.
+
+We will be using `log.txt` as a source of record for streaming the output of
+the job's executed command process.
 
 ### Worker Library
 
@@ -48,26 +57,6 @@ jobs. The broker needs a persistent layer, so we will be using an `inmem sync(ma
 Client -> Broker -> []PoolOfWorkers
 ![](https://github.com/donnemartin/system-design-primer/raw/master/images/h81n9iK.png)
 
-## Trade Offs
-
-### Syncing State - Channels vs Mutex
-
-Channels will allow an easier primative for allowing the broker routine to communicate/keep track of our worker routines.
-
-### Inmem vs Real Persistence
-
-Restarting the broker service will wipe its queue, and the state of its old and new
-jobs. This isn't ideal; however project scope makes an exception. Contrastingly,
-disk persistence will allow us to amply query old jobs, and relay their valuable information to
-the requesting client even after the main broker process has halted.
-
-### Caching
-
-No caching is required, (even inmem). We're trading off quick lookups, and fancy
-LRU to handle large read load frequency. This is outside the scope of the project.
-
-### Telemetry
-
 ## Security
 
 ### Transport Layer
@@ -78,6 +67,21 @@ communication between web browsers and servers. The connection itself is secure
 because symmetric cryptography is used to encrypt the data transmitted. The keys
 are uniquely generated for each connection and are based on a shared secret
 negotiated at the beginning of the session, also known as a TLS handshake.
+
+We will be using `TLS v1.3`, which provides both privacy and data integrity in
+securing communication between the client and the upstream server. `TLS v1.3` offers the following cipher suites:
+
+-[x] TLS_AES_128_GCM_SHA256
+-[] TLS_AES_256_GCM_SHA384
+-[] TLS_CHACHA20_POLY_1305_SHA265
+-[] TLS_AES_128_GCM_SHA256
+
+#### Certs
+
+-   X.509
+-   Signature Algorithm: ecdsa-with-SHA256
+-   Public Key Algorithm: id-ecPublicKey
+-   ECDSA Public-Key (256bit)
 
 ### Authentication
 
@@ -98,21 +102,72 @@ following artifacts:
 1. Private key && CSR
 1. Signed cert from CA private key + CSR
 
-<Elaborate more on how the authentication process works?>
-
 ### Authorization
 
-A simple role schema will be used for authorization:
+A simple role based schema will be used for authorization:
 
 1. Reader - query/stream
 1. Writer - start/stop/query/stream
 
-These roles will be baked into the certificates.
+The client certificate contains an identifier on its `CN` (Common Name), which
+will be mapped to its set of permissions, done through an imem map on the
+backend.
+
+```go
+authorizedClients := map[string][]string{{
+   "reading-client": []string{"read"},
+   "writing-client": []string{"write"},
+}}
+...
+methods := map[string][]string{{
+  "query": []string{"read"},
+  "stream": []string{"read"},
+  "stop": []string{"write"},
+  "start": []string{"write"},
+}}
+
+...
+m := "stream"
+clientIdentifier := certificate.CN
+methodPermissions := method[m]
+permissions, ok := authorizedClients[clientIdentifier]
+if !ok {
+ ...User Does not exist...
+}
+if ok := can(methodPermissions, permissions); !ok {
+  ...User lacks authorization...
+}
+
+--Call Method Handler--
+...
+```
+
+These roles will be mapped to the client's common name, or `CN`.
 
 Using a [grpc interceptor](https://grpc.io/blog/grpc-web-interceptor/) allows us to check the original gRPC request's role context
 before passing it along. We must support two types of actions: Request/Response (start,stop,query), and
 Streaming data (stream). To support Request/Response, we will be using a Unary interceptor.
 To support streaming, we will be using a [stream interceptor](https://grpc.io/blog/grpc-web-interceptor/#stream-interceptor-example) to check authz.
+
+## Trade Offs
+
+### Syncing State - Channels vs Mutex
+
+Channels will allow an easier primative for allowing the broker routine to communicate/keep track of our worker routines.
+
+### Inmem vs Real Persistence
+
+Restarting the broker service will wipe its queue, and the state of its old and new
+jobs. This isn't ideal; however project scope makes an exception. Contrastingly,
+disk persistence will allow us to amply query old jobs, and relay their valuable information to
+the requesting client even after the main broker process has halted.
+
+### Caching
+
+No caching is required, (even inmem). We're trading off quick lookups, and fancy
+LRU to handle large read load frequency. This is outside the scope of the project.
+
+### Telemetry
 
 ## Definition of Success
 
