@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package = "github.com/notjrbauer/super-secret-interview/proto";
+
 service WorkerService {
   rpc Stream(StreamRequest) returns (stream StreamResponse);
 
