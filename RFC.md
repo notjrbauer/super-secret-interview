@@ -1,7 +1,7 @@
 # RFC `APPROVED`: Job Worker Service Running(Linux Commands)
 
 Editor: John Bauer
-Status: **UNAPPROVED**
+Status: **APPROVED**
 
 ### Requested reviewers: x, x, x, x.
 
