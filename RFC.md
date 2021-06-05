@@ -1,4 +1,4 @@
-# RFC 1 `UNAPPROVED`: Job Worker Service Running(Linux Commands)
+# RFC `APPROVED`: Job Worker Service Running(Linux Commands)
 
 Editor: John Bauer
 Status: **UNAPPROVED**
