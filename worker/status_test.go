@@ -4,20 +4,20 @@ import (
 	"encoding/json"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStatus(t *testing.T) {
-  Convey("Status json should work", t, func() {
-
+	t.Run("Status json should work", func(t *testing.T) {
 		b, err := json.Marshal(Success)
-		So(err, ShouldBeNil)
-		So(b, ShouldResemble, []byte(`"success"`)) // deep equal should be used
+		assert.NoError(t, err)
+		assert.Equal(t, []byte(`"success"`), b)
 
 		var s JobStatus
 
 		err = json.Unmarshal([]byte(`"failed"`), &s)
-		So(err, ShouldBeNil)
-		So(s, ShouldEqual, Failed)
-  })
+		assert.NoError(t, err)
+		assert.Equal(t, Failed, s)
+	})
+
 }

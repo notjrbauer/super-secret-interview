@@ -26,8 +26,10 @@ func (s JobStatus) String() string {
 		return "success"
 	case Running:
 		return "running"
+	case Stopped:
+		return "stopped"
 	default:
-		return ""
+		return "unknown"
 	}
 }
 

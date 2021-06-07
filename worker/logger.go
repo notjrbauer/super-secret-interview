@@ -24,24 +24,24 @@ func NewLogger(cfg *Config) *Logger {
 
 // Path returns a absolute file path given a name.
 func (l *Logger) Path(name string) string {
-	return filepath.Join(l.LogDir, fmt.Sprintf("%s", name))
+	return filepath.Join(l.LogDir, name)
 }
 
 // Create creates the directory of the given path w/ the logger's base path. It then creates the file specified by the fileName.
 func (l *Logger) Create(path string, fileName string) (*os.File, error) {
 	path = l.Path(path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		fmt.Printf("Making dir %s\n", path)
+		log.Printf("Making dir %s\n", path)
 		if err = os.MkdirAll(path, 0755); err != nil {
 			return nil, fmt.Errorf("Error making dir %s: %w", path, err)
 		}
 	}
-	return os.Create(fmt.Sprintf("%s/%s", path, fileName))
+	return os.Create(filepath.Join(path, fileName))
 }
 
 // Remove removes the specified file.
 func (l *Logger) Remove(name string) error {
-	return os.Remove(l.Path(name))
+	return os.RemoveAll(l.Path(name))
 }
 
 // Stream accepts a file's name and returns channel which emits data from the tail'd file.
@@ -49,7 +49,7 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 	ch := make(chan string)
 
 	filePath = l.Path(filePath)
-	filePath = fmt.Sprintf("%s/%s", filePath, fileName)
+	filePath = filepath.Join(filePath, fileName)
 	if ok := exists(filePath); !ok {
 		return nil, errors.New("file descriptor does not exist")
 	}
@@ -58,7 +58,7 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error creating stdout for Cmd", err)
+		return nil, fmt.Errorf("error creating stdout for Cmd: %w", err)
 	}
 	if err := cmd.Start(); err != nil {
 		return nil, err
@@ -73,7 +73,12 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 				fmt.Fprintln(os.Stderr, "Error reading from stdout for Cmd", err)
 				return
 			}
-			ch <- string(buf[0:n])
+			select {
+			case ch <- string(buf[0:n]):
+			case <-ctx.Done():
+				log.Printf("finished streaming for %s\n", filePath)
+				return
+			}
 		}
 	}()
 
@@ -97,7 +102,7 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 // exists reports whether the named file or directory exists.
 func exists(name string) bool {
 	if _, err := os.Stat(name); err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(err) || errors.Is(err, os.ErrPermission) {
 			return false
 		}
 	}

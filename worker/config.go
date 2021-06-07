@@ -1,9 +1,6 @@
 package worker
 
 import (
-	"log"
-	"os"
-
 	"github.com/BurntSushi/toml"
 )
 
@@ -38,13 +35,8 @@ type clientConfig struct {
 
 // LoadConfig loads configuration
 func LoadConfig(cfgFile string) (*Config, error) {
-	if _, err := os.Stat(cfgFile); err != nil {
-		return nil, err
-	}
-
 	cfg := new(Config)
 	if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
-		log.Printf("Error decoding toml file: %s\n", err.Error())
 		return nil, err
 	}
 

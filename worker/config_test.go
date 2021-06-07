@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfig(t *testing.T) {
@@ -21,32 +21,30 @@ func TestConfig(t *testing.T) {
     ssl_key = "/etc/teleport.d/worker1.key"
   `
 
-	Convey("When giving invalid file", t, func() {
+	t.Run("When giving an invalid file", func(t *testing.T) {
 		cfg, err := LoadConfig("/path/to/invalid/file")
-		So(err, ShouldNotBeNil)
-		So(cfg, ShouldBeNil)
+		assert.Error(t, err)
+		assert.Nil(t, cfg)
 	})
 
-	Convey("Everything should work on valid config file", t, func() {
+	t.Run("Everything should work on valid config file", func(t *testing.T) {
 		tmpfile, err := ioutil.TempFile("", "worker_test")
-		So(err, ShouldEqual, nil)
+		assert.NoError(t, err)
 		defer os.Remove(tmpfile.Name())
 
 		tmpDir, err := ioutil.TempDir("", "worker_test")
-		So(err, ShouldBeNil)
+		assert.NoError(t, err)
 		defer os.RemoveAll(tmpDir)
 
 		curCfgBlob := cfgBlob
 
 		err = ioutil.WriteFile(tmpfile.Name(), []byte(curCfgBlob), 0644)
-		So(err, ShouldEqual, nil)
+		assert.NoError(t, err)
 		defer tmpfile.Close()
 
 		cfg, err := LoadConfig(tmpfile.Name())
-		So(err, ShouldBeNil)
-		So(cfg.Global.Name, ShouldEqual, "test_worker")
-
-		So(cfg.Server.Hostname, ShouldEqual, "worker1.example.com")
+		assert.NoError(t, err)
+		assert.Equal(t, "test_worker", cfg.Global.Name)
+		assert.Equal(t, "worker1.example.com", cfg.Server.Hostname)
 	})
-
 }

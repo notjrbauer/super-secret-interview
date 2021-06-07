@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/sys/unix"
 )
 
 var errProcessNotStarted = errors.New("Process Not Started")
@@ -36,11 +35,8 @@ type CmdStatus struct {
 	PID int
 	// Status is an enum mapping to the states above.
 	Status JobStatus
-}
-
-// IsRunning returns if the process is running or not.
-func (c CmdStatus) Running() bool {
-	return c.Status == Running
+	// ExitCode represents the exit code of the process, or -1 if it's still running.
+	ExitCode int
 }
 
 type empty struct{}
@@ -66,14 +62,10 @@ func NewJob(cmdAndArgs []string) (*Job, error) {
 	var cmd *exec.Cmd
 	jobID := uuid.NewString()
 
-	if len(cmdAndArgs) == 1 {
-		cmd = exec.Command(cmdAndArgs[0])
-	} else if len(cmdAndArgs) > 1 {
-		c, args := cmdAndArgs[0], cmdAndArgs[1:]
-		cmd = exec.Command(c, args...)
-	} else if len(cmdAndArgs) == 0 {
+	if len(cmdAndArgs) == 0 {
 		return nil, errors.New("command length should be at least len(1)")
 	}
+	cmd = exec.Command(cmdAndArgs[0], cmdAndArgs[1:]...)
 
 	return &Job{Cmd: cmd, ID: jobID}, nil
 }
@@ -84,12 +76,12 @@ func (j *Job) Terminate() error {
 		return errProcessNotStarted
 	}
 
-	if err := unix.Kill(j.Cmd.Process.Pid, syscall.SIGINT); err != nil {
+	if err := j.Cmd.Process.Signal(syscall.SIGINT); err != nil {
 		return fmt.Errorf("error killing process %d : %s", j.Cmd.Process.Pid, err)
 	}
 	select {
 	case <-time.After(2 * time.Second):
-		unix.Kill(j.Cmd.Process.Pid, syscall.SIGKILL)
+		j.Cmd.Process.Signal(syscall.SIGKILL)
 		log.Println("SIGTERM failed to kill the job in 2s. SIGKILL sent")
 	case <-j.finished:
 
@@ -135,7 +127,7 @@ func (w *workerService) Start(cmdAndArgs []string) (string, error) {
 
 	job.SetLogFile(logFileFd)
 
-	job.finished = make(chan empty, 1)
+	job.finished = make(chan empty)
 
 	if err := job.Cmd.Start(); err != nil {
 		w.log.Remove(job.ID)
@@ -155,14 +147,20 @@ func (w *workerService) Start(cmdAndArgs []string) (string, error) {
 		close(job.finished)
 
 		updatedStatus := CmdStatus{
-			PID: job.Cmd.ProcessState.Pid(),
+			PID:      job.Cmd.ProcessState.Pid(),
+			ExitCode: job.Cmd.ProcessState.ExitCode(),
 		}
 
-		switch code := job.Cmd.ProcessState.ExitCode(); code {
-		case 0:
-			updatedStatus.Status = Success
-		default:
-			updatedStatus.Status = Stopped
+		code := updatedStatus.ExitCode
+		isExited := job.Cmd.ProcessState.Exited()
+
+		if isExited {
+			if code > 0 {
+				updatedStatus.Status = Failed
+			}
+			if code == 0 {
+				updatedStatus.Status = Success
+			}
 		}
 
 		w.mu.Lock()
