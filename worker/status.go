@@ -36,7 +36,7 @@ func (s JobStatus) String() string {
 func (s JobStatus) MarshalJSON() ([]byte, error) {
 	strStatus := s.String()
 	if strStatus == "" {
-		return []byte{}, errors.New("Invalid status value")
+		return nil, errors.New("Invalid status value")
 	}
 
 	return json.Marshal(strStatus)

@@ -32,10 +32,6 @@ func TestConfig(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tmpfile.Name())
 
-		tmpDir, err := ioutil.TempDir("", "worker_test")
-		assert.NoError(t, err)
-		defer os.RemoveAll(tmpDir)
-
 		curCfgBlob := cfgBlob
 
 		err = ioutil.WriteFile(tmpfile.Name(), []byte(curCfgBlob), 0644)

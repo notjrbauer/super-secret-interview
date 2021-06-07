@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -16,7 +17,7 @@ type Logger struct {
 }
 
 // NewLogger returns a new Logger instance.
-func NewLogger(cfg *Config) *Logger {
+func NewLogger(cfg *config) *Logger {
 	return &Logger{
 		LogDir: cfg.Global.LogDir,
 	}
@@ -30,11 +31,10 @@ func (l *Logger) Path(name string) string {
 // Create creates the directory of the given path w/ the logger's base path. It then creates the file specified by the fileName.
 func (l *Logger) Create(path string, fileName string) (*os.File, error) {
 	path = l.Path(path)
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Printf("Making dir %s\n", path)
-		if err = os.MkdirAll(path, 0755); err != nil {
-			return nil, fmt.Errorf("Error making dir %s: %w", path, err)
-		}
+
+	// returns nil if already exists
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return nil, fmt.Errorf("Error making dir %s: %w", path, err)
 	}
 	return os.Create(filepath.Join(path, fileName))
 }
@@ -65,11 +65,15 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 	}
 
 	go func() {
+		defer func() {
+			close(ch)
+		}()
+
 		// todo: this should be configurable w/ a limit
 		buf := make([]byte, 1024)
 		for {
 			n, err := stdout.Read(buf)
-			if err != nil {
+			if err != nil && err != io.EOF {
 				fmt.Fprintln(os.Stderr, "Error reading from stdout for Cmd", err)
 				return
 			}
@@ -77,7 +81,7 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 			case ch <- string(buf[0:n]):
 			case <-ctx.Done():
 				log.Printf("finished streaming for %s\n", filePath)
-				return
+				break
 			}
 		}
 	}()
@@ -85,7 +89,6 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 	go func() {
 		select {
 		case <-ctx.Done():
-
 			// kill tail process
 			cmd.Process.Kill()
 			log.Printf("finished streaming for %s\n", filePath)
@@ -95,9 +98,7 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Error waiting for Cmd", err)
 			}
-			close(ch)
 		}
-
 	}()
 
 	return ch, nil

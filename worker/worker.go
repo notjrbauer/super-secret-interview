@@ -14,6 +14,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const terminationGraceInterval = (time.Second * 2)
+
 var errProcessNotStarted = errors.New("Process Not Started")
 
 // WorkerService interacts with linux processes.
@@ -80,7 +82,7 @@ func (j *Job) Terminate() error {
 		return fmt.Errorf("error killing process %d : %s", j.Cmd.Process.Pid, err)
 	}
 	select {
-	case <-time.After(2 * time.Second):
+	case <-time.After(terminationGraceInterval):
 		j.Cmd.Process.Signal(syscall.SIGKILL)
 		log.Println("SIGTERM failed to kill the job in 2s. SIGKILL sent")
 	case <-j.finished:
@@ -97,7 +99,7 @@ func (j *Job) SetLogFile(logFile *os.File) {
 }
 
 // NewService returns a new worker service.
-func NewService(cfg *Config) *workerService {
+func NewService(cfg *config) *workerService {
 	return &workerService{
 		cfg:  cfg,
 		log:  NewLogger(cfg),
@@ -108,7 +110,7 @@ func NewService(cfg *Config) *workerService {
 type workerService struct {
 	mu sync.RWMutex
 
-	cfg  *Config
+	cfg  *config
 	log  *Logger
 	jobs map[string]*Job
 }
@@ -147,6 +149,7 @@ func (w *workerService) Start(cmdAndArgs []string) (string, error) {
 		close(job.finished)
 
 		updatedStatus := CmdStatus{
+			Status:   Stopped,
 			PID:      job.Cmd.ProcessState.Pid(),
 			ExitCode: job.Cmd.ProcessState.ExitCode(),
 		}
