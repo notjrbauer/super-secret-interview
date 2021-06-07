@@ -85,6 +85,9 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 	go func() {
 		select {
 		case <-ctx.Done():
+
+			// kill tail process
+			cmd.Process.Kill()
 			log.Printf("finished streaming for %s\n", filePath)
 			return
 		default:
@@ -94,6 +97,7 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 			}
 			close(ch)
 		}
+
 	}()
 
 	return ch, nil
