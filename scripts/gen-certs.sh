@@ -23,23 +23,24 @@ gen_key() {
 
 # TODO: configs may be merged into a common CA config file, so the shell cmd could look elegant.
 gen_cert() {
-  openssl req -new -key $1.key -out $1.csr -subj "/C=US/ST=IL/L=Champaign/O=Pyre Inc./OU=Interview/CN=$1" -config $SCRIPT_DIR/openssl.cnf
-  openssl x509 -req -days 1000 -in $1.csr -CA $2.crt -CAkey $2.key -set_serial 0101 -out $1.crt -sha256 -extensions 'v3_req' -extfile $SCRIPT_DIR/openssl.cnf
+  openssl req -new -key $1.key -out $1.csr -subj "/C=US/ST=IL/L=Champaign/O=Pyre Inc./OU=Interview/CN=$1" -config <(cat $SCRIPT_DIR/openssl.cnf <(printf "\nDNS.0 = $1"))
+  openssl x509 -req -days 1000 -in $1.csr -CA $2.crt -CAkey $2.key -set_serial 0101 -out $1.crt -sha256 -extensions 'v3_req' -extfile <(cat $SCRIPT_DIR/openssl.cnf <(printf "\nDNS.0 = $1"))
 }
 
 gen_key root_ca
-openssl req -new -x509 -days 1000 -key root_ca.key -out root_ca.crt -subj "/C=US/ST=IL/L=Champaign/O=Pyre Inc./OU=Interview/CN=workerservice"
+openssl req -new -x509 -days 365 -key root_ca.key -out root_ca.crt -subj "/C=US/ST=IL/L=Champaign/O=Pyre Inc./OU=Interview/CN=workerservice"
+
 gen_key server
 gen_cert server root_ca
 
-gen_key client_cert_read
-gen_key client_cert_write
-gen_key client_cert_unauthorized
-gen_key client_cert_unauthorized_permissions
+gen_key client_read
+gen_key client_write
+gen_key client_unauthorized
+gen_key client_unauthorized_permissions
 
-gen_cert client_cert_read root_ca
-gen_cert client_cert_write root_ca
-gen_cert client_cert_unauthorized root_ca
-gen_cert client_cert_unauthorized_permissions root_ca
+gen_cert client_read root_ca
+gen_cert client_write root_ca
+gen_cert client_unauthorized root_ca
+gen_cert client_unauthorized_permissions root_ca
 
 mv *.key *.csr *.crt $PROJ_DIR/certs/
