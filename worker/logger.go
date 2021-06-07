@@ -73,8 +73,10 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 		buf := make([]byte, 1024)
 		for {
 			n, err := stdout.Read(buf)
-			if err != nil && err != io.EOF {
-				fmt.Fprintln(os.Stderr, "Error reading from stdout for Cmd", err)
+			if err != nil {
+				if err != io.EOF {
+					fmt.Fprintln(os.Stderr, "Error reading from stdout for Cmd", err)
+				}
 				return
 			}
 			select {

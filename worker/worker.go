@@ -79,7 +79,7 @@ func (j *Job) Terminate() error {
 	}
 
 	if err := j.Cmd.Process.Signal(syscall.SIGINT); err != nil {
-		return fmt.Errorf("error killing process %d : %s", j.Cmd.Process.Pid, err)
+		return fmt.Errorf("error killing process %d : %w", j.Cmd.Process.Pid, err)
 	}
 	select {
 	case <-time.After(terminationGraceInterval):
@@ -142,11 +142,10 @@ func (w *workerService) Start(cmdAndArgs []string) (string, error) {
 	w.mu.Unlock()
 
 	go func() {
+		defer func() { job.finished <- empty{} }()
 		if err := job.Cmd.Wait(); err != nil {
 			log.Printf("command execution failed: %v", err)
 		}
-
-		close(job.finished)
 
 		updatedStatus := CmdStatus{
 			Status:   Stopped,
