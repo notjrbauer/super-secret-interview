@@ -78,8 +78,8 @@ func TestNewWorkerService_LongProcess(t *testing.T) {
 		err = ws.Stop(jobID)
 		assert.NoError(t, err)
 
-		// We sigterm, then sigkill so we need atleast 1 second wait time.
 		time.Sleep(time.Second * 1)
+
 		s, err = ws.Query(jobID)
 		assert.NoError(t, err)
 		assert.Equal(t, Stopped, s.Status)
