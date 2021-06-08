@@ -1,4 +1,5 @@
 SHELL=/bin/bash
+BIN_DIR = $(PWD)/bin
 GO_GEN_PATH="proto"
 PACKAGES := $(shell go list ./... )
 REPO=$(shell pwd)
@@ -14,5 +15,21 @@ proto:
 gencerts:
 	bash scripts/gen-certs.sh
 
-.PHONY: gencerts 
+api: 
+	go build -o $(BIN_DIR)/$@ cmd/$@/main.go 
+
+cli: 
+	go build -o $(BIN_DIR)/$@ cmd/$@/main.go 
+
+test:
+	go test $(REPO)/... -v -race -failfast -cover
+
+build: api cli
+
+clean: 
+	rm -rf bin/*
+
+all: clean build 
+
+.PHONY: gencerts api cli test all
 

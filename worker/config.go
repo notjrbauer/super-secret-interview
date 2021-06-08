@@ -4,8 +4,8 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// config represents worker config options
-type config struct {
+// Config represents worker config options
+type Config struct {
 	Global globalConfig `toml:"global"`
 	Server serverConfig `toml:"server"`
 	Client clientConfig `toml:"client"`
@@ -34,8 +34,8 @@ type clientConfig struct {
 }
 
 // LoadConfig loads configuration
-func LoadConfig(cfgFile string) (*config, error) {
-	cfg := new(config)
+func LoadConfig(cfgFile string) (*Config, error) {
+	cfg := new(Config)
 	if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
 		return nil, err
 	}

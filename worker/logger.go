@@ -17,7 +17,7 @@ type Logger struct {
 }
 
 // NewLogger returns a new Logger instance.
-func NewLogger(cfg *config) *Logger {
+func NewLogger(cfg *Config) *Logger {
 	return &Logger{
 		LogDir: cfg.Global.LogDir,
 	}
@@ -83,7 +83,7 @@ func (l *Logger) Stream(ctx context.Context, filePath string, fileName string) (
 			case ch <- string(buf[0:n]):
 			case <-ctx.Done():
 				log.Printf("finished streaming for %s\n", filePath)
-				break
+				return
 			}
 		}
 	}()

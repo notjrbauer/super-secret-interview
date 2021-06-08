@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewWorkerService_ShortProcess(t *testing.T) {
-	c := &config{}
+	c := &Config{}
 	c.Global.LogDir = t.TempDir()
 	jobID := ""
 
@@ -43,7 +43,7 @@ func TestNewWorkerService_ShortProcess(t *testing.T) {
 }
 
 func TestNewWorkerService_LongProcess(t *testing.T) {
-	c := &config{}
+	c := &Config{}
 	c.Global.LogDir = t.TempDir()
 	jobID := ""
 

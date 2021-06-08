@@ -346,4 +346,7 @@ ess_cert_id_chain	= no	# Must the ESS cert id chain be included?
 				# (optional, default: no)
 				#
 [alt_names] # this is only for test purpose
+DNS.0 = localhost
+IP.0 = 127.0.0.1
+IP.1 = ::1
 

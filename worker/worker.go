@@ -18,8 +18,8 @@ const terminationGraceInterval = (time.Second * 2)
 
 var errProcessNotStarted = errors.New("Process Not Started")
 
-// WorkerService interacts with linux processes.
-type WorkerService interface {
+// Service interacts with linux processes.
+type Service interface {
 
 	// Start creates a linux process.
 	Start(cmd []string) (jobID string, err error)
@@ -99,7 +99,7 @@ func (j *Job) SetLogFile(logFile *os.File) {
 }
 
 // NewService returns a new worker service.
-func NewService(cfg *config) *workerService {
+func NewService(cfg *Config) *workerService {
 	return &workerService{
 		cfg:  cfg,
 		log:  NewLogger(cfg),
@@ -110,7 +110,7 @@ func NewService(cfg *config) *workerService {
 type workerService struct {
 	mu sync.RWMutex
 
-	cfg  *config
+	cfg  *Config
 	log  *Logger
 	jobs map[string]*Job
 }
