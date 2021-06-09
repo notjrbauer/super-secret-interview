@@ -78,7 +78,7 @@ func (j *Job) Terminate() error {
 		return errProcessNotStarted
 	}
 
-	if err := j.Cmd.Process.Signal(syscall.SIGINT); err != nil {
+	if err := j.Cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		return fmt.Errorf("error killing process %d : %w", j.Cmd.Process.Pid, err)
 	}
 	select {

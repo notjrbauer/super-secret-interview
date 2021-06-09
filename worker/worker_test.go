@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -77,8 +76,6 @@ func TestNewWorkerService_LongProcess(t *testing.T) {
 
 		err = ws.Stop(jobID)
 		assert.NoError(t, err)
-
-		time.Sleep(time.Second * 1)
 
 		s, err = ws.Query(jobID)
 		assert.NoError(t, err)
